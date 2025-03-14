@@ -10,10 +10,6 @@
 ///   Version           : 1.06
 ///</para><para>
 ///   History:
-///     1.07: 2024-12-01
-///       - Added attribute [CLPVerifier] allowing to do further testing of
-///         given command line attributes. See DemoVerifier.dproj in test dir
-///         [by Olray Dragon]
 ///     1.06: 2022-05-25
 ///       - Added attribute [CLPIgnore] allowing you to use properties for calcu-
 ///         lations based on command line values [by Olray Dragon]
