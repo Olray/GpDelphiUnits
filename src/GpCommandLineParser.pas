@@ -6,10 +6,16 @@
 ///
 ///   Author            : Primoz Gabrijelcic
 ///   Creation date     : 2014-05-25
-///   Last modification : 2022-05-25
-///   Version           : 1.06
+///   Last modification : 2025-03-23
+///   Version           : 1.08
 ///</para><para>
 ///   History:
+///     1.08: 2025-03-23
+///       - Fixed issue #13 "Values with spaces" [by Olray Dragon]
+///         https://github.com/gabr42/GpDelphiUnits/issues/13
+///     1.07: 2024-12-01
+///       - Added attribute [CLPVerifier] which is called after the cmdline has been
+///         handled [by Olray Dragon]
 ///     1.06: 2022-05-25
 ///       - Added attribute [CLPIgnore] allowing you to use properties for calcu-
 ///         lations based on command line values [by Olray Dragon]
@@ -784,6 +790,47 @@ begin
 end; { TGpCommandLineParser.GetOptions }
 
 function TGpCommandLineParser.GrabNextElement(var s, el: string): boolean;
+
+  // check if parameter starts with a / and contains a :"
+  // which indicates an open string like /param:"With Spaces"
+  function CheckQuotes(const s, el: string): boolean;
+  begin
+    if (el[1] <> '/') then Exit(false);
+    Result := pos(':"', el) > 0;
+  end;
+
+  // counts the occurrences of a substring
+  function Occurrences(const Substring, Text: string): integer;
+  var offset: integer;
+  begin
+    result := 0;
+    offset := PosEx(Substring, Text, 1);
+    while offset <> 0 do
+    begin
+      inc(result);
+      offset := PosEx(Substring, Text, offset + length(Substring));
+    end;
+  end;
+
+  // adds everything until the next '"'
+  procedure FinishQuotes(var s, el: string);
+  var LPos: Integer;
+  begin
+    if Occurrences('"', el) = 1 then begin
+      LPos := PosEx('"', s, 1); // find the terminating quote
+      if(LPos < 1) then // unterminated quote
+        LPos := Length(s);
+      el := el + ' ' + Copy(s, 1, LPos);
+      Delete(s, 1, LPos);
+    end;
+  end;
+
+  // removes all quotes from a string
+  procedure RemoveAllQuotes(var s: string);
+  begin
+    s := StringReplace(s, '"', '', [rfReplaceAll]);
+  end;
+
 var
   p: integer;
 begin
@@ -811,6 +858,10 @@ begin
       p := Length(s) + 1;
     el := Copy(s, 1, p-1);
     Delete(s, 1, p);
+    if CheckQuotes(s, el) then begin
+      FinishQuotes(s, el);
+      RemoveAllQuotes(el);
+    end;
   end;
   Result := true;
 end; { TGpCommandLineParser.GrabNextElement }
